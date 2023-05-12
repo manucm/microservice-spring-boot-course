@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import javax.transaction.Transactional;
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -26,7 +25,7 @@ public class OrderService {
     private OrderRepository orderRepository;
 
     @Autowired
-    private WebClient webClient;
+    private WebClient.Builder webClientBuilder;
 
     public void placeOrder(OrderRequest orderRequest) {
         Order order = new Order();
@@ -38,8 +37,8 @@ public class OrderService {
 
         List<String> codSkuList = extractCodSku(orderLineItems);
 
-        InventoryResponse[] codSkus = webClient.get()
-                .uri("http://localhost:8083/api/inventory", (uriBuilder -> uriBuilder.queryParam("codSku", codSkuList).build()))
+        InventoryResponse[] codSkus = webClientBuilder.build().get()
+                .uri("http://inventory-service/api/inventory", (uriBuilder -> uriBuilder.queryParam("codSku", codSkuList).build()))
                 .retrieve()
                 .bodyToMono(InventoryResponse[].class)
                 .block();
