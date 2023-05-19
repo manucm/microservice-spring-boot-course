@@ -5,8 +5,10 @@ import com.mscv.orderservice.dto.OrderLineItemDto;
 import com.mscv.orderservice.dto.OrderRequest;
 import com.mscv.orderservice.entities.Order;
 import com.mscv.orderservice.entities.OrderLineItems;
+import com.mscv.orderservice.event.OrderPlacedEvent;
 import com.mscv.orderservice.repository.OrderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -20,6 +22,9 @@ import static java.util.stream.Collectors.toList;
 @Service
 @Transactional
 public class OrderService {
+
+    @Autowired
+    KafkaTemplate<String, OrderPlacedEvent> kafkaTemplate;
 
     @Autowired
     private OrderRepository orderRepository;
@@ -46,6 +51,7 @@ public class OrderService {
         if (allProductInStock(codSkus)) {
             order.setOrderLineItems(orderLineItems);
             orderRepository.save(order);
+            kafkaTemplate.send("notificationTopic", new OrderPlacedEvent(order.getOrderNumber()));
         } else {
             throw new IllegalArgumentException("Todos los productos no están en stock");
         }
